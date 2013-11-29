@@ -1,6 +1,6 @@
 % vim: set spell:
 
-\section{1}
+\section{}
 
 This exercise was solved exclusively using classic Unix utilities\footnotemark,
 specifically \texttt{awk}, \texttt{cat}, \texttt{cut}, \texttt{grep},
@@ -20,17 +20,253 @@ detailed discussion of how the results below were attained, see Appendix
 The number of queries per user is roughly $4.3\pm135.5$, meaning that roughly
 68\% of the users perform between $1$ and $140$ queries.
 
-\item \emph{Analyze the variability of query length (i.e., in words or in
+\item \emph{Analyse the variability of query length (i.e., in words or in
 characters).}
+
+We extract only the queries from the data file and sort them in lexicographic
+order. By looking at the tail of this file, we find that some queries are
+written in character-based languages. We chose therefore to analyse the
+variability of query length in terms of characters.
+
+A query is roughly $20.5\pm 14.4$ characters long, meaning that roughly 68\% of
+the queries have a character length between $6.1$ and $34.9$.
+
+\item \emph{What percentage of queries are mixed case? Upper case? Lower case?}
+
+We assume that this question asks to analyse the casing of all queries, not
+just unique queries.
+
+We first normalize the data by removing all non-alphabetic characters from the
+queries, and removing those queries which are thus rendered empty. We then
+count how many of those queries are all upper-cased, and how many all
+lower-cased, the remainder is mixed case. See \referToTable{casing} for
+results.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Mixed} & \textbf{Upper} & \textbf{Lower} & \textbf{Other} \\
+\hline
+29.262 \%      & 4.624 \%       & 66.008 \%      & 0.106 \% \\
+\hline
+\end{tabular}
+\caption[]{Percentage of queries using mixed, upper, and lower case. ``Other''
+are those queries that contain no alphabetic characters.}
+\label{table:casing}
+\end{table}
+
+\item \emph{Count the number of questions (look for patterns such as starting
+with Wh-words, or ending with a '?'    symbol). What percentage of queries do
+questions make up? What is the most common type of question?}
+
+We've compiled a set of interrogative pronouns, and allowed for some variation
+in them due to e.g. genitive casing. Looking for these or queries ending in
+question mark, we've found that 82045 queries look like questions, or 8.235\%
+of the queries.
+
+The most common query seems to be ``Where can I find Math jokes?''. To be
+certain to not fall prey to e.g. casing and spacing variations, we've
+normalized the data set by lowercasing all the questions, removing spaces, and
+all non-alphabetic symbols.
+
+\item \emph{What are the $k$ most common queries issued?}
+
+The dataset was normalized as discussed above, below we present the collection
+frequency along with the normalized question.
+
+\begin{lstlisting}
+    114 wherecanifindmathjokes
+     64 wherecanifindinformationoncaptech
+     60 howdoesdryicework
+     51 areyougay
+     46 whyisdilbertsosexy
+     44 whereistheisleofman
+     40 howcanjeeveshelpmeshopforholidays
+     36 amiinlove
+     32 whyistheskyblue
+     31 doesbritneyspearshavebreastimplants
+     30 isjeevesgay
+     29 howoldami
+     29 howcanjeeveshelpmeshopfortoys
+     28 whattimeisit
+     27 whatisthemeaningoflife
+     25 whatismyiq
+     24 wherecanifindprinterdriversforahewlettpackardlaserjetiiiprinter
+     23 whataretheprivateorganizationdoingtohelpalleviatepoverty
+     23 howcanjeeveshelpmeshopforgifts
+     21 wherecanifindsonglyrics
+\end{lstlisting}
+
+\item \emph{What percentage of queries contain stopwords like ``and'', ``the'',
+``of'', `in'', ``for''?}
+
+We assume that the intent is for us to use the handed out list of stop words.
+
+For this question (and the next two) we will normalise our queries as follows:
+we'll remove all non-alphanumeric characters, turn any sequence of spaces into
+exactly one space, and lower case all the queries.
+
+$23.574\%$ of the queries contain stop words.
+
+\item \emph{What are the $k$ most common non-stopwords appearing in queries
+that contain the word download?}
+
+Here we first split our queries into words, then remove those words occurring
+in the stop words file, sort the remaining words, and count their occurrences.
+We present the results below, along with the number of occurrences of that
+word:
+
+\begin{lstlisting}
+   3441 download
+   1110 downloads
+    837 free
+    394 games
+    282 mp3
+    256 game
+    237 music
+    133 downloadable
+    109 software
+    108 pokemon
+     92 windows
+     78 christmas
+     70 mac
+     68 player
+     67 pc
+     66 internet
+     65 demo
+     64 funny
+     60 files
+     55 cd
+\end{lstlisting}
+
+\item \emph{What are the $k$ most common non-stopwords appearing in queries?}
+
+We'll proceed as above, except that instead of picking out those queries where
+the word ``download'' appears, we'll simply split all the normalized
+queries into words. The results are as follows:
+
+\begin{lstlisting}
+  20934 free
+  13306 pictures
+  13117 information
+  12382 christmas
+  11500 sex
+   9369 nude
+   8279 new
+   7108 buy
+   6775 pics
+   6708 online
+   5670 web
+   5501 music
+   5232 games
+   4687 women
+   4272 does
+   4177 stories
+   4126 site
+   4021 cards
+   3966 porn
+   3850 state
+\end{lstlisting}
+
+At this point, we might guess that the data set is from Ask Jeeves from around
+Christmas time.
+
+\item \emph{What percentage of queries were asked by only one user?}
+
+We can find this by extracting the hashed user ids from the query log, and
+counting those user ids that occur only once. The result is $10.081\%$ of the
+queries.
+
+\item \emph{How often is a consecutive query a reformulation of the previous
+one? (Not the same query to greater depth.)}
+
+\textbf{Not completed.}
+
+We could solve this by, for every user, for every query, looking multiple
+queries ahead, and computing the edit distances\cite[\textsection 3.3.3 (pp.
+58--60)]{irbook} to them. Choosing some lower bound, non-zero edit distance,
+would help us find some reformulations. As an alternative we could look at the
+edit distance in terms of words rather than characters.
+
+\item \emph{What kind of spelling mistakes do users seem to make in general?}
+
+\textbf{Not completed.}
+
+We could find this by looking at how alike words tend to be. First, we'd
+normalize the queries by removing some special symbols e.g. commas, and leaving
+others, e.g. apostrophes. We then extract the words, and sort them using the
+edit distance metric, as above.
+
+This is probably fairly expensive computationally. One alternative would be to
+find a list of common spelling mistakes\footnotemark, and look for those
+amongst the queries. This however, seems fairly counter-productive as we're
+using common spelling mistakes to find common spelling mistakes, yielding
+little effective benefit from our work.
+
+\footnotetext{E.g. \url{https://en.wikipedia.org/wiki/Commonly_misspelled_English_words}.}
+
+\item \emph{What percentage of queries contain a person's name?}
+
+\textbf{Not completed.}
+
+Recognising names is a fairly complicated task. First we'd normalize the
+dataset by deleting all digits, genitive casing, special symbols, etc. Then
+we'd match every word in a query against a list of names.
+
+A different approach would be to match every word against a specially crafted
+English dictionary, that did not contain names. Whenever we find a word that is
+not in this dictionary, it is likely to be a name. This strategy is perhaps
+safer as names, other than being quite numerous, also may have a lot of
+variations in their transliterations to English. Besides, users tend to make
+spelling mistakes.
+
+\item \emph{How often do URLs appear in queries?}
+
+Looking for queries that contain a contiguous sequence of non-space, and non-at
+(@) characters, followed by a dot and a sequence of alphabetic characters of
+length at least two (the top-level domain), reveals that 4.644\% of the queries
+look like they contain a URL.
+
+This strategy is fairly na\"ive, as this also matches e.g. searches for
+\texttt{.exe} files.
+
+\item \emph{Is it likely that this web query log puts anyone's privacy at
+risk?}
+
+The web query log itself does not put anyone's privacy at risk, so long as
+users are not personally identifiable. Processing some of these queries might.
+Some queries seek to infringe the privacy of others, while others yet might
+seek to attack the search engine itself, and thereby compromise private data on
+the search engine's servers.
+
+\item \emph{Can you find addresses, phone numbers, or other identifiers in the
+log file?}
+
+Having little knowledge of the geographical origin of the queries, this is
+quite a challenging task. For instance, not all addresses contain numbers, and
+not all phone numbers are formatted alike.
+
+One straight forward approach to looking for phone numbers is to looks for
+queries with long sequence of digits, possibly separated by spaces or dashes.
+Having removed the queries that look like having years and year ranges, this
+approach still does not yield very satisfactory results.
+
+Addresses are even more complex in this sense. Addresses don't necessarily have
+any keys or special separators. One possible strategy would be to find queries
+with a lot of separators (e.g. comma), having digits, and being mixed case.
+This was not attempted.
 
 \item \emph{Is query volume constant throughout the day?}
 
 The query log only covers the morning (or evening) hours, starting at 09:00:00,
 and ending at 11:56:18. Within this time frame, the query volume is fairly
-constant, as \referToFigure{times} illustrates. The query volume does fall off
-after 11:50\footnotemark.
+constant, but slightly larger in the first half hour, as \referToFigure{times}
+illustrates. The query volume does fall off after 11:50\footnotemark, but this
+may be an outlier.
 
-\footnotetext{Perhaps because half of the people go off to lunch \smiley{}.}
+\footnotetext{Perhaps because half of the monkeys have gone off to lunch
+\smiley{}.}
 
 \includeFigure[0.6]{times}{Distribution of the query volume over time. The
 labels indicate a starting point, with each bar representing a 10 minute time
