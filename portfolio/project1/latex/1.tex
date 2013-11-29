@@ -1,371 +1,40 @@
 % vim: set spell:
 
-\section*{Exercise 1}
+\section{1}
 
-The answer to this exercise is presented in such a manner that the reader can
-reproduce the results on a *nix system, e.g. an Ubuntu. Feel welcome to open 
+This exercise was solved exclusively using classic Unix utilities\footnotemark,
+specifically \texttt{awk}, \texttt{cat}, \texttt{cut}, \texttt{grep},
+\texttt{head} \texttt{sed}, \texttt{uniq}, \texttt{sort}, \texttt{tail} and
+\texttt{wc}.  This was done in part to explore the power of these tools, and in
+part out of considerations for the reader: it is assumed that the reader, if
+nothing else, has had an introduction to a Unix-like operating system. For a
+detailed discussion of how the results below were attained, see Appendix
+\ref{appendix:1}.
 
-% terminal, cd, |, >
-
-We analyze the handed out query log. This is a file named
-\texttt{excite-999000.txt} obtained from the course web site on November 18.
-
-% md5sum
-
-To
-be more confident that we're working with the same file, we can compare our
-\texttt{md5sum}s:
-
-\begin{verbatim}
-$ md5sum excite-999000.txt
-514321481e3b2347afe25d0243c88606  excite-999000.txt
-\end{verbatim}
-
-Since the 3rd column is to be ignored, we start by placing all but the 3rd
-column (separated by tabs) into a new file, \texttt{excite-999000.txt.no3}:
-
-\begin{verbatim}
-$ cat excite-999000.txt | cut -f1,2,4- - > excite-999000.no3.txt
-\end{verbatim}
-
-If we look at the number of lines, it appears that we have a log of 999000
-queries:
-
-\begin{verbatim}
-$ wc -l excite-999000.no3.txt
-999000 excite-999000.no3.txt
-\end{verbatim}
-
-Before further processing, we'll sort the queries by hashed user id and then
-timestamp, i.e. first by column 2, then column 1.
-
-\begin{verbatim}
-$ sort -k2,2 -k1,1 excite-999000.no3.txt > excite-999000.no3.by.2-1.txt
-\end{verbatim}
-
-Eliminating duplicates, we see that we really 996299 queries. This
-normalization is justifiable as the same user sending the same query within the
-time frame of one second is most probably due to a technical glitch.
-
-\begin{verbatim}
-$ uniq excite-999000.no3.by.2-1.txt > excite-999000.no3.by.2-1.uniq.txt
-$ wc -l excite-999000.no3.by.2-1.uniq.txt 
-996299 excite-999000.no3.by.2-1.uniq.txt
-\end{verbatim}
+\footnotetext{See also \url{https://en.wikipedia.org/wiki/List_of_Unix_utilities}.}
 
 \begin{itemize}
 
-\item
+\item \emph{What is the mean number of queries per user id?}
 
-We assume that no pair of user ids hash to the same ``hashed user id'',
-so a unique hash designates a unique user id.
+The number of queries per user is roughly $4.3\pm135.5$, meaning that roughly
+68\% of the users perform between $1$ and $140$ queries.
 
-To compute the mean number of queries per user id, we pick out the user id
-column, and count how many times a user id appears in consecutive order. This
-gives a count the number of queries issued by each user id.
+\item \emph{Analyze the variability of query length (i.e., in words or in
+characters).}
 
-\begin{verbatim}
-$ cut -f2 excite-999000.no3.by.2-1.uniq.txt | uniq -c | \
-  sort -nr > excite-999000.no3.query.counts.txt
-$ head -5 excite-999000.no3.query.counts.txt 
-  52883 F54BC573FF3C94B1
-  11999 02F1CA1699E5D828
-   6880 245832BC3425778D
-   6483 18E21BC7D100C75A
-   6404 E43DD6D82BFBD0B8
-\end{verbatim}
+\item \emph{Is query volume constant throughout the day?}
 
-We now extract the first column (the counts), and use \texttt{awk} utility to
-compute the median and standard deviation.
+The query log only covers the morning (or evening) hours, starting at 09:00:00,
+and ending at 11:56:18. Within this time frame, the query volume is fairly
+constant, as \referToFigure{times} illustrates. The query volume does fall off
+after 11:50\footnotemark.
 
-\begin{verbatim}
-$ sed 's/ *\([0-9]\+\) .*/\1/' excite-999000.no3.query.counts.txt \
-  | awk '{x[NR]=$0; s+=$0} END{md=s/NR;
-  for (i in x){ss += (x[i]-md)^2} sd = sqrt(ss/NR);
-  print "MD = "md; print "SD = "sd}'
-MD = 4.297
-SD = 135.462
-\end{verbatim}
+\footnotetext{Perhaps because half of the people go off to lunch \smiley{}.}
 
-So the number of queries per user is roughly $4.3\pm135.5$, meaning that at
-least 68\% of the users perform between $0$ and $139.8$ queries.
-
-\item
-
-We extract the third column (queries), and sort them in lexicographic order:
-
-\begin{verbatim}
-$ cut -f3- excite-999000.no3.by.2-1.uniq.txt | sort > queries.txt
-\end{verbatim}
-
-We'll use an approach similar to the above to find the median and standard
-deviation of the query length (in characters).
-
-\begin{verbatim}
-$ cat queries.txt | awk '{x[NR]=length($0); s+=length($0)} \
-  END{md=s/NR; for (i in x){ss += (x[i]-md)^2} sd = sqrt(ss/NR); \
-  print "MD = "md; print "SD = "sd}'
-MD = 20.4887
-SD = 14.365
-\end{verbatim}
-
-So a query is roughly $20.5\pm 14.4$ characters long, meaning that at least
-68\% of the queries has a character length between $6.1$ and $34.9$.
-
-The reason that we choose to do this based on characters is because by looking
-at the tail of the \texttt{queries.txt} file, we find that a few queries are
-written in character-based languages. 
-
-\item
-
-We assume that this question asks to analyse the casing of all queries, not
-just unique queries. The latter is easily obtainable by first sorting and
-extracting unique queries, but otherwise following the method below.
-
-First, we remove all non-alphabetic (in terms of ASCII) characters from the
-queries, and ignore all those queries which are now empty texts:
-
-\begin{verbatim}
-$ sed 's/[^a-zA-Z]//g' queries.txt | sed '/^$/d' > queries.alpha.txt
-\end{verbatim}
-
-Note, \texttt{queries.alpha.txt} omits those queries that have no alphabetic
-characters at all. It is assumed that it is non-sensical to speak about the
-casing of e.g. numeric queries.
-
-First, we'll count the number of queries we're now dealing with:
-
-\begin{verbatim}
-$ wc -l queries.alpha.txt 
-995241 queries.alpha.txt
-\end{verbatim}
-
-We can now count the number of queries composed of only upper cased characters:
-
-\begin{verbatim}
-$ grep "^[A-Z][A-Z]*$" queries.alpha.txt | wc -l
-46065
-\end{verbatim}
-
-And the number of queries composed of only lower cased characters:
-
-\begin{verbatim}
-$ grep "^[a-z][a-z]*$" queries.alpha.txt | wc -l
-657638
-\end{verbatim}
-
-The remaining queries are mixed case.
-
-We present the percentages relative to the total number of queries, i.e.
-996299. The results are presented in \referToTable{casing}.
-
-\begin{table}[h!]
-\centering
-\begin{tabular}{|c|c|c|c|}
-\hline
-\textbf{Mixed} & \textbf{Upper} & \textbf{Lower} & \textbf{Other} \\
-\hline
-29.262 \%      & 4.624 \%       & 66.008 \%      & 0.106 \% \\
-\hline
-\end{tabular}
-\caption[]{Percentage of queries using mixed, upper, and lower case. ``Other''
-are those queries that contain no alphabetic characters.}
-\label{table:casing}
-\end{table}
-
-\item
-
-We'll first extract those queries that look like questions. One easy way of
-identifying these is to see whether they start with an interrogative pronoun,
-or end with a question mark.
-
-At this point, spelling becomes important, and there are quite a few misspelled
-queries. For example, there are queries that start with ``hows'' or ``how's'',
-while there are other non-interrogative words that start with ``how'', e.g.
-``Howard''.
-
-We've tried to handle some of these problems by allowing a certain symbols to
-follow the interrogative words, in particular (space), (comma), \texttt{s},
-\texttt{?}, \texttt{:}, \texttt{+}. Otherwise, the strategy is as outlined
-above.
-
-\begin{verbatim}
-$ grep -iE "^((which|what|whose|who|whom|what|which|where|whence|
-whither|when|how|why|wherefore|whether|whoever|howto|whois)[^ ',s\?:+]|.*\?)$" \
-queries.txt > questions.txt
-$ wc -l questions.txt 
-82045 questions.txt
-\end{verbatim}
-
-To see what we miss by using this strategy, we can first generate a file
-containing queries that contain one of the interrogative words, but are not
-followed by one of the above symbols:
-
-\begin{verbatim}
-$ grep -iE "^(which|what|whose|who|whom|what|which|where|whence|
-whither|when|how|why|wherefore|whether|whoever)[^ ',s\?:+][^\?]*$" \
-queries.txt > badquestions.txt
-$ wc -l badquestions.txt 
-740 badquestions.txt
-\end{verbatim}
-
-Observing the file, we see that we miss only a few special forms. We can refine
-the method further, but this may be missing the point of this exercise.
-
-There are 82045 queries that we've identified as queries, or 8.235\% of the
-queries. We can find the most frequently asked question by sorting the
-questions, counting how many times each question appears in sequence, sorting
-by this count, and taking the top element.
-
-Before we do this however, we would like to eliminate any minor variations due
-to spacing and other non-alphanumeric characters:
-
-\begin{verbatim}
-$ sed 's/[^a-zA-Z0-9]//g' questions.txt | sed '/^$/d' | \
-  tr '[:upper:]' '[:lower:]' > questions.normalized.txt
-$ sort questions.normalized.txt | uniq -c | sort -nr | head -1
-    114 wherecanifindmathjokes
-\end{verbatim}
-
-This does seem a little implausible. We hypothesise that if anything, this has
-to do with minor spelling variations in the questions. Indeed, simply stripping
-non-alphabetic characters first yields the same result.
-
-\item
-
-\begin{verbatim}
-$ sort questions.normalized.txt | uniq -c | sort -nr | head -20
-    114 wherecanifindmathjokes
-     64 wherecanifindinformationoncaptech
-     60 howdoesdryicework
-     51 areyougay
-     46 whyisdilbertsosexy
-     44 whereistheisleofman
-     40 howcanjeeveshelpmeshopforholidays
-     36 amiinlove
-     32 whyistheskyblue
-     31 doesbritneyspearshavebreastimplants
-     30 isjeevesgay
-     29 howoldami
-     29 howcanjeeveshelpmeshopfortoys
-     28 whattimeisit
-     27 whatisthemeaningoflife
-     25 whatismyiq
-     24 wherecanifindprinterdriversforahewlettpackardlaserjetiiiprinter
-     23 whataretheprivateorganizationdoingtohelpalleviatepoverty
-     23 howcanjeeveshelpmeshopforgifts
-     21 wherecanifindsonglyrics
-\end{verbatim}
-
-\item
-
-We need to find a suitable list of stopwords for our domain. \cite[2.2.2/(p.
-27)]{irbook} indicates that a suitable choice is some subset of the words with
-the highest collection frequency.
-
-For this question we will normalise our queries as follows: we'll remove all
-non-alphanumeric characters, turn any sequence of spaces into exactly one
-space, and lower case all the queries:
-
-\begin{verbatim}
-$ sed 's/[^a-zA-Z0-9 ]//g' queries.txt | sed 's/  +/ /' | \
-  tr '[:upper:]' '[:lower:]' > queries.normalized.txt
-\end{verbatim}
-
-We now convert this normalized list of of queries into a list of words. We
-proceed by turning every punctuation symbol or space into a line break, and
-removing those lines which now become empty:
-
-\begin{verbatim}
-$ cat queries.normalized.txt | tr '[[:punct:][:space:]]' '\n' | \
-  sed '/^$/d' > words.txt
-\end{verbatim}
-
-We can now sort the words lexicographically, count how many times each word
-occurs, sort by the counts, and list the top 20 words:
-
-\begin{verbatim}
-$ sort words.txt | uniq -c | sort -nr | head -20
-  84477 i
-  74460 can
-  72586 where
-  60265 and
-  60076 the
-  58265 find
-  47978 of
-  34077 a
-  31046 in
-  29146 what
-  27651 is
-  27354 for
-  21588 on
-  21362 how
-  20934 free
-  18448 to
-  13686 do
-  13306 pictures
-  13117 information
-  12382 christmas
-\end{verbatim}
-
-We'll be a little selective about the choice of stopwords as things like
-``free'', ``pictures'' and ``christmas'' seem to be essential
-keywords\footnotemark.
-
-\footnotetext{By now, my guess is that we're dealing with an Ask Jeeves query
-log from around Christmas time.} 
-
-We use the \texttt{grep} tool to pick out those queries that contain the above
-stopwords. We demand that the stopword is either surrounded by spaces, or
-occurs at the beginning or end of a query:
-
-\begin{verbatim}
-$ grep -E "(^| )(i|can|where|and|the|find|of|a|in|what|is|for|on|how|to|
-  do|information)( |$)" queries.txt | wc -l
-244478
-\end{verbatim}
-
-This is roughly 24.539\% of the queries.
-
-\item
-
-\emph{This question seems a little ambiguous, given the definition of stopwords
-as in\cite[2.2.2/(p. 27)]{irbook}. We'll assume that the question asks for
-those among the 20 most frequent words that are likely to be relevant to
-searching for some download.}
-
-We proceed in a manner similar to above, except that instead of simply
-\texttt{cat}ing the normalized queries, we'll only pick those that contain the
-word download:
-
-\begin{verbatim}
-$ grep "download" queries.normalized.txt | tr '[[:punct:][:space:]]' '\n' | \
-  sed '/^$/d' > words.txt
-$ sort words.txt | uniq -c | sort -nr | head -20
-   3441 download
-   1623 i
-   1503 can
-   1442 where
-   1110 downloads
-    927 and
-    837 free
-    395 for
-    394 games
-    343 the
-    326 find
-    325 to
-    282 mp3
-    256 game
-    252 a
-    237 music
-    190 of
-    133 downloadable
-    125 or
-    109 software
-\end{verbatim}
-
-As might be expected, people are looking for free downloads of games, music
-(mp3), and software.
+\includeFigure[0.6]{times}{Distribution of the query volume over time. The
+labels indicate a starting point, with each bar representing a 10 minute time
+frame.}
 
 \end{itemize}
 
