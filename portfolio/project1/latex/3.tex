@@ -1,0 +1,23 @@
+% vim: set spell:
+
+\section{}
+
+The code is included in Appendix \ref{appendix:3} (p. \pageref{appendix:3}).
+The assignment text seems ambiguous about when to perform the normalisation.
+According to a forum post on the course web site\footnotemark, normalisation
+should be done on all nodes before a subsequent iteration. This is at odds with
+the requirement that all nodes start with an initial score of $0.45$, as this
+is not normalised. I decided normalise the initial score to $0.2$.
+
+\footnotetext{\url{https://absalon.itslearning.com/ContentArea/ContentArea.aspx?LocationType=1&LocationID=49915}.}
+
+The code prints the page rank after every iteration. The final results are:
+
+\begin{lstlisting}
+Yahoo(0.118687)
+Bing(0.225007)
+Facebook(0.199280)
+Google(0.147902)
+Twitter(0.309125)
+\end{lstlisting}
+
