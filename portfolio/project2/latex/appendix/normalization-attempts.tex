@@ -1,0 +1,64 @@
+% vim: set spell:
+
+\section{Normalization attempts}
+
+\subsection{Stopwords}
+
+Instead of using a handed out stopword list, an attempt was made at generating
+hand-crafted stopword lists. Using an nDCG metric, and a vector space model
+with TFIDF weighing, this approach seemed poorer in comparison. Also, not using
+a stopword list yielded worse results.
+
+The normalization technique is presented for the abstract dataset only.
+
+We can start by extracting the words in the texts, and obtaining the 40 most
+frequent words.
+
+% http://www.real-world-systems.com/docs/tr.1.html
+
+\begin{lstlisting}
+$ grep -Pzo "(?s)<TEXT>.*?</TEXT>" abstract.sgml | \ # Extract only the texts.
+    sed '/^<\/\?TEXT>/d' | \ # Remove all <TEXT> and </TEXT> tags.
+    tr '[:upper:]' '[:lower:]' | \ # Lower-case everything.
+    tr -s '[[:punct:][:space:]]' '\n' \ # Replace seq. of punct. or space by \n.
+    > abstract.words.txt # Store result in abstract.words.txt.
+$ sort abstract.words.txt | \ # Sort the words.
+    uniq -c | \ # Select only unique words, count occurrences.
+    sort -nr | \ # Sort numerically in nonincreasing order.
+    head -40 | \ # Select the top 40.
+    > abstract.stopwords.txt # Store result in abstract.stopwords.txt.
+\end{lstlisting}
+
+We can now handpick the list of stopwords, by considering their count and
+semantic relation to the problem domain (cystic fibrosis). Here's one possible
+result:
+
+\begin{lstlisting}
+$ cat abstract.stopwords.txt 
+the
+of
+in
+and
+with
+to
+a
+was
+were
+from
+for
+is
+by
+that
+or
+be
+as
+this
+than
+an
+these
+are
+had
+at
+have
+\end{lstlisting}
+

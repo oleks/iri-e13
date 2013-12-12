@@ -1,0 +1,97 @@
+% vim: set spell:
+
+\section{}
+
+\subsection*{Tools}
+
+For this exercise it was chosen to use Lemur 4.12 out of considerations for the
+reader. The reader has, if nothing else, access to Lab session 2 documentation,
+explaining how to install and run Lemur 4.12 together with a Python interface
+for Lemur. The reader is thereby made more capable of reproducing the results
+below.
+
+The Python interface to Lemur was downloaded from
+\url{http://itlab.dbit.dk/~toine/uchfall2010/lemur-interface.zip}. The zip file
+has \texttt{md5sum} \lstinline$e32028007c903a8639c1a01a23c954cd$. This zip file
+also contains a list of stopwords. TODO: only worth mentioning if we use the
+stopword file.
+
+The only notational difference between the examples below and the Lab session 2
+documentation, is that a Python script by the name \lstinline$x$ is executed as
+\lstinline$python2 x$ instead of \lstinline$./x$, as the exercise was completed
+on a system with multiple Python installations. Specifically, Python 2.7.6 was
+used.
+
+\subsection*{Dataset}
+
+The handed out zip file\footnotemark~containing the Cystic Fibrosis data
+collection has
+
+\footnotetext{Downloaded from
+\lstinline$http://itlab.dbit.dk/~toine/uchfall2010/test-collection.zip$.}
+
+\begin{lstlisting}
+$ md5sum test-collection.zip 
+0eca42ff1f4cbba1129a13ef743cda54  test-collection.zip
+\end{lstlisting}
+
+We assume that the handed out data set is complete. That is, no new documents
+are meant to be added to the system after indexing. In the converse case, it
+would have been better to use cross-validation in many of the below tasks.
+
+The data was already split into the different fields, stored in different files
+with the names \lstinline$cystic-fibrosis.<type>.sgml$, where
+\lstinline$<type>$ is either \lstinline$title$, \lstinline$abstract$,
+\lstinline$subjects$, or \lstinline$all$. Subsequently, we'll simply refer to
+\lstinline$<type>$ for brevity, unless we mean to speak about a specific field.
+
+The data is mixed case. Lemur seems to perform case insensitive indexing and
+searching, but this has not been confirmed in any other way, as the Lemur
+documentation is seemingly rather lacking. Attempting to upper case all the
+data for prior to some of the below runs, did not yield better results.
+
+The handed out relevance judgements score each document as either marginally
+relevant (1) or highly relevant (2), leaving out irrelevant documents. Only
+nDCG deals with such graded relevance assessments, so if we chose any other
+metric, we would have to discard some relevant information already at this
+stage.
+
+
+We first configure and index the
+different data files.
+
+We perform stopword filtering, and stemming using the
+Krovetz stemmer.
+
+\begin{lstlisting}
+$ python2 lemur-configure.py \
+    -i <type>-index \ # Name for the index.
+    -l stopwords.txt \ # Use the handed out stopword list.
+    -s krovetz \ # Use the Krovetz stemmer.
+    -p /usr/local/bin/ \ # Location of the Lemur binaries.
+    -f trec \ # The dataset is in TREC format.
+    -c <type>-config.xml # Where to put the configuration.
+$ python2 lemur-index.py -c <type>-config.xml -d cystic-fibrosis.<type>.sgml
+\end{lstlisting}
+
+We now issue a search on all the handed out queries, and save the result in a
+respective file.
+
+\begin{lstlisting}
+$ python2 lemur-search.py -c <type>-config.xml -m 1 -q cystic-fibrosis.queries \
+    -o <type>-title.txt
+\end{lstlisting}
+
+\begin{lstlisting}
+$ trec_eval -m ndcg cystic-fibrosis.qrel results-subjects.txt
+\end{lstlisting}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{cccc}
+\texttt{title} & \texttt{abstract} & \texttt{subjects} & \texttt{all} \\
+$0.4075$ & $0.4380$ & $0.4080$ & $0.5922$
+\end{tabular}
+
+\end{table}
+

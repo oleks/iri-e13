@@ -1,0 +1,45 @@
+\documentclass[a4paper]{article}
+
+\usepackage[a4paper]{geometry}
+
+\usepackage[fancy]{template}
+\usepackage{survival-pack}
+
+\usepackage{appendix}
+
+\usepackage{titlesec}
+
+\usepackage{wasysym}
+
+\setup{%
+  subject={Information Retrieval and Interation},%
+  assignment={Project 2},%
+  date={December 13, 2013.}%
+}
+\setupLocation[short=DIKU]{Datalogisk institut, Copenhagen University}
+\setupAuthor[addendum={\email{oleks@diku.dk}}]{Oleksandr Shturmov}
+
+%\titlelabel{Exercise\quad}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{first} % no fancy header on first page (just a fancy footer).
+
+\pagebreak
+
+The below is a solution to the exercise 2 of project 2, together with the
+relevant appendices.
+
+\tableofcontents
+
+\setcounter{section}{1}
+
+\input{2}
+
+\appendix
+
+\input{appendix/main}
+
+\end{document}
+
