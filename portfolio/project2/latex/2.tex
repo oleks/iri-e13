@@ -10,12 +10,6 @@ explaining how to install and run Lemur 4.12 together with a Python interface
 for Lemur. The reader is thereby made more capable of reproducing the results
 below.
 
-The Python interface to Lemur was downloaded from
-\url{http://itlab.dbit.dk/~toine/uchfall2010/lemur-interface.zip}. The zip file
-has \texttt{md5sum} \lstinline$e32028007c903a8639c1a01a23c954cd$. This zip file
-also contains a list of stopwords. TODO: only worth mentioning if we use the
-stopword file.
-
 The only notational difference between the examples below and the Lab session 2
 documentation, is that a Python script by the name \lstinline$x$ is executed as
 \lstinline$python2 x$ instead of \lstinline$./x$, as the exercise was completed
@@ -35,15 +29,27 @@ $ md5sum test-collection.zip
 0eca42ff1f4cbba1129a13ef743cda54  test-collection.zip
 \end{lstlisting}
 
+The handed out Python interface for Lemur\footnotemark~(containing a stopword
+list) has
+
+\footnotetext{Downloaded from
+\lstinline|http://itlab.dbit.dk/~toine/uchfall2010/lemur-interface.zip|.}
+
+\begin{lstlisting}
+$ md5sum lemur-interface.zip 
+e32028007c903a8639c1a01a23c954cd  lemur-interface.zip
+\end{lstlisting}
+
 We assume that the handed out data set is complete. That is, no new documents
 are meant to be added to the system after indexing. In the converse case, it
-would have been better to use cross-validation in many of the below tasks.
+would have been more appropriate to use cross-validation in the tasks below.
+
+Let \lstinline|$TYPE| be either \lstinline$title$, \lstinline$abstract$,
+\lstinline$subjects$, or \lstinline$all$.
 
 The data was already split into the different fields, stored in different files
-with the names \lstinline$cystic-fibrosis.<type>.sgml$, where
-\lstinline$<type>$ is either \lstinline$title$, \lstinline$abstract$,
-\lstinline$subjects$, or \lstinline$all$. Subsequently, we'll simply refer to
-\lstinline$<type>$ for brevity, unless we mean to speak about a specific field.
+with the names \lstinline|cystic-fibrosis.$TYPE.sgml|. We'll rename them to
+simply \lstinline|$TYPE.sgml|.
 
 The data is mixed case. Lemur seems to perform case insensitive indexing and
 searching, but this has not been confirmed in any other way, as the Lemur
@@ -65,33 +71,103 @@ Krovetz stemmer.
 
 \begin{lstlisting}
 $ python2 lemur-configure.py \
-    -i <type>-index \ # Name for the index.
+    -i $TYPE-index \ # Name for the index.
     -l stopwords.txt \ # Use the handed out stopword list.
     -s krovetz \ # Use the Krovetz stemmer.
     -p /usr/local/bin/ \ # Location of the Lemur binaries.
     -f trec \ # The dataset is in TREC format.
-    -c <type>-config.xml # Where to put the configuration.
-$ python2 lemur-index.py -c <type>-config.xml -d cystic-fibrosis.<type>.sgml
+    -c $TYPE-config.xml # Where to put the configuration.
+$ python2 lemur-index.py -c $TYPE-config.xml -d cystic-fibrosis.$TYPE.sgml
 \end{lstlisting}
 
 We now issue a search on all the handed out queries, and save the result in a
 respective file.
 
 \begin{lstlisting}
-$ python2 lemur-search.py -c <type>-config.xml -m 1 -q cystic-fibrosis.queries \
-    -o <type>-title.txt
+$ python2 lemur-search.py -c $TYPE-config.xml -m 1 -q cystic-fibrosis.queries \
+    -o results-$TYPE.txt
 \end{lstlisting}
 
 \begin{lstlisting}
-$ trec_eval -m ndcg cystic-fibrosis.qrel results-subjects.txt
+$ trec_eval -m ndcg cystic-fibrosis.qrel results-$TYPE.txt
 \end{lstlisting}
 
 \begin{table}[h!]
 \centering
-\begin{tabular}{cccc}
-\texttt{title} & \texttt{abstract} & \texttt{subjects} & \texttt{all} \\
-$0.4075$ & $0.4380$ & $0.4080$ & $0.5922$
+\begin{tabular}{lcccc}
+\lstinline|$R_MODEL| & \lstinline$title$ & \lstinline$abstract$ &
+    \lstinline$subjects$ & \lstinline$all$ \\
+\hline
+\lstinline$-m 1$ & $0.4075$ & $0.4380$ & $0.4080$ & $\mathbf{0.5922}$ \\
+\hline
+\lstinline$-m 4 DirchletPrior=3000$ & $0.3956$ & $0.4109$ & $0.4001$ & $\mathbf{0.5721}$ \\
+\lstinline$-m 4 DirchletPrior=2000$ & $0.3971$ & $0.4160$ & $0.4032$ & $\mathbf{0.5750}$ \\
+\lstinline$-m 4 DirchletPrior=300$ & $0.4052$ & $\underline{0.4242}$ & $\underline{0.4090}$ & $\mathbf{0.5887}$ \\
+\lstinline$-m 4 DirchletPrior=200$ & $\underline{0.4074}$ & $0.4202$ & $0.4080$ & $\underline{\mathbf{0.5894}}$ \\
+\lstinline$-m 4 DirchletPrior=100$ & $0.4061$ & $0.4148$ & $0.4070$ & $\mathbf{0.5871}$ \\
+\hline
+\lstinline$-m 3 JelinekMercerLambda=0.95$ & $0.3944$ & $0.4130$ & $0.3922$ & $\mathbf{0.5796}$ \\
+\lstinline$-m 3 JelinekMercerLambda=0.9$ & $\underline{0.3989}$ & $0.4152$ & $0.3957$ &
+    $\underline{\mathbf{0.5882}}$ \\
+\lstinline$-m 3 JelinekMercerLambda=0.8$ & $0.3958$ & $\underline{0.4171}$ & $0.4003$ & $\mathbf{0.5870}$ \\
+\lstinline$-m 3 JelinekMercerLambda=0.7$ & $0.3964$ & $0.4156$ & $\underline{0.4025}$ & $\mathbf{0.5854}$ \\
+\lstinline$-m 3 JelinekMercerLambda=0.1$ & $0.3798$ & $0.3989$ & $0.4022$ & $\mathbf{0.5494}$ \\
+\hline
 \end{tabular}
+\caption[]{Choice of ranking model vs. choice of fields, nDCG. The data was
+filtered with the handed out stopwords and stemmed using the Krovetz stemmer.
+Including all the fields yields the best results for every row (bold).  For
+every column the underlined cell indicates the seemingly best choice of
+parameter for a particular method. 1 - Vector Space model with TFIDF weighting,
+4 - Language modeling with Dirchlet smooting, 3 - Language modeling with
+Jelinek-Mercer smoothing.}
+\label{table:ranking-model-vs-fields}
+\end{table}
 
+
+We can compare nDCG, MAP, and MRR using
+\referToTable{evaluation-measure-vs-fields}).  The table also includes
+precision and recall measures for the purposes of discussion.
+
+Mean Reciprocal Rank (MRR) considers only how many results the user has to skip
+from the top before reaching a relevant result. With the exception of using
+only the subjects field for indexing, the user can expect to see the a relevant
+result as the very first result.
+
+Mean Average Precision (MAP) gives higher weights to relevant results high up
+in the results list, while giving 0 weights to noise. Summing over the result
+list and dividing the by the number of results yields a MAP. The MAP results in
+our case indicate that either there are few results high up in the result set,
+or that there is a lot of noise in the result set.
+
+This is also what we see if we look at our precision, a lot of the results
+returned are highly irrelevant. Our recall tells us again that indexing using
+all fields gives us most relevant results upon querying.
+
+Normalized Discounted Cumulative Gain (nDCG), allowes graded relevance rather
+than binary. It gives preference to most relevant results ahead of the list.
+This was chosen as the primary measure as the original relevance judgements
+were graded. Having considered other evaluation measures, nDCG does seem to
+provide the most fair judgement for our information retrieval problem.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lcccc}
+\lstinline|$E_MEASURE| & \lstinline$title$ & \lstinline$abstract$ &
+    \lstinline$subjects$ & \lstinline$all$ \\
+\hline
+\lstinline$-m ndcg$ & $0.4075$ & $0.4380$ & $0.4080$ & $\mathbf{0.5922}$ \\
+\lstinline$-m map$ & $0.1858$ & $0.1969$ & $0.1963$ & $\textbf{0.3003}$ \\
+\lstinline$-m recip_rank$ & $0.6179$ & $\mathbf{0.7558}$ & $0.4580$ & $0.7361$ \\
+(precision) & $\approx 0.05$ & $\approx 0.02$ & $\mathbf{\approx 0.08}$ & $\approx 0.03$ \\
+(recall) & $\approx 0.42$ & $\approx 0.51$ & $\approx 0.56$ & $\mathbf{\approx 0.79}$ \\
+\hline
+\end{tabular}
+\caption[]{Choice of evaluation measure vs. choice of fields. All results use
+the Vector Space with TFIDF weighting model. The data was filtered with the
+handed out stopwords and stemmed using the Krovetz stemmer.  Including all the
+fields yields the best results for (almost) every row. The best results for
+each evaluation measure are marked in bold.}
+\label{table:evaluation-measure-vs-fields}
 \end{table}
 
