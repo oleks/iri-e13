@@ -2,10 +2,25 @@
 
 \section{Normalization attempts}
 
+\subsection{Tokenization}
+
+Tokenization is the process of removing spaces and punctuation from the texts
+in the dataset. In our case, it might also be relevant to remove the numbers.
+As this seemed complicated to do with Unix tools, Python 2.7.6 was employed.
+
+Informally, the script looks up all the texts, and replaces all sequences of
+punctuation or spaces (as found in the ASCII table), by a single space. The
+script follows.
+
+\lstinputlisting[language=python]{../../../lab/2/tokenize.py}
+
+Tokenizing both the data files and the queries in this way, did not yield any
+considerably better results. Nor did upper casing all the texts subsequently.
+
 \subsection{Stopwords}
 
 Instead of using a handed out stopword list, an attempt was made at generating
-hand-crafted stopword lists. Using an nDCG metric, and a vector space model
+hand-crafted stopword lists. Using an nDCG metric, and a Vector Space model
 with TFIDF weighing, this approach seemed poorer in comparison. Also, not using
 a stopword list yielded worse results.
 

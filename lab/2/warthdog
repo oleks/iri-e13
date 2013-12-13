@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Perform Lemur configuration, indexing, retrieval and evaluation.
+# Sample usage:
+# $ warthdog
+# $ warthdog title "-m 3 JelinekMercerLambda=0.9" "-m recip_rank"
+
+TYPE=${1-"all"}                 # all fields,
+R_MODEL=${2-"-m 1"}             # Vector Space with TFIDF weighting,
+E_MEASURE=${3-"-m ndcg"}        # and nDCG evaluation measure.
+
+rm -rf $TYPE-index/             $(: Remove the old index, if any.)
+
+python2 lemur-configure.py \
+  -i $TYPE-index                $(: Name for the index.) \
+  -l stopwords.txt              $(: Use the handed out stopword list.) \
+  -s krovetz                    $(: Use the Krovetz stemmer.) \
+  -p /usr/local/bin/            $(: Location of the Lemur binaries.) \
+  -f trec                       $(: The dataset is in TREC format.) \
+  -c $TYPE-config.xml           $(: Where to put the con figuration.)
+
+python2 lemur-index.py \
+  -c $TYPE-config.xml           $(: Configuration file.) \
+  -d $TYPE.sgml
+
+python2 lemur-search.py \
+  -c $TYPE-config.xml           $(: Configuration file.) \
+  $R_MODEL                      $(: Choice of ranking model.) \
+  -q cystic-fibrosis.queries    $(: Queries.) \
+  -o results-$TYPE.txt          $(: Where to put the results.)
+
+trec_eval \
+  $E_MEASURE                    $(: Choice of measure, if any.) \
+  cystic-fibrosis.qrel          $(: Relation judgements.) \
+  results-$TYPE.txt             $(: Results from searching.)
+
