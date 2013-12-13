@@ -56,41 +56,30 @@ searching, but this has not been confirmed in any other way, as the Lemur
 documentation is seemingly rather lacking. Attempting to upper case all the
 data for prior to some of the below runs, did not yield better results.
 
+Tokenization and custom stopword filtering has been attempted, but this seemed
+to have little gain over simply using the original dataset. The attempts are
+documented in the appendices. Not stemming (e.g. the subjects dataset) did not
+yield better results either.
+
+In the end, tokenization was not performed.  Stopword filtering was done
+against the comperehensive stopword list found together with the Python
+interface for Lemur. For stemming, the Krovetz stemmer was used.
+
 The handed out relevance judgements score each document as either marginally
 relevant (1) or highly relevant (2), leaving out irrelevant documents. Only
 nDCG deals with such graded relevance assessments, so if we chose any other
 metric, we would have to discard some relevant information already at this
 stage.
 
+To simplify the running of tests, we devise a shell script (named e.g.
+\lstinline|worthog|).
 
-We first configure and index the
-different data files.
+\lstinputlisting{../../../lab/2/warthdog}
 
-We perform stopword filtering, and stemming using the
-Krovetz stemmer.
-
-\begin{lstlisting}
-$ python2 lemur-configure.py \
-    -i $TYPE-index \ # Name for the index.
-    -l stopwords.txt \ # Use the handed out stopword list.
-    -s krovetz \ # Use the Krovetz stemmer.
-    -p /usr/local/bin/ \ # Location of the Lemur binaries.
-    -f trec \ # The dataset is in TREC format.
-    -c $TYPE-config.xml # Where to put the configuration.
-$ python2 lemur-index.py -c $TYPE-config.xml -d cystic-fibrosis.$TYPE.sgml
-\end{lstlisting}
-
-We now issue a search on all the handed out queries, and save the result in a
-respective file.
-
-\begin{lstlisting}
-$ python2 lemur-search.py -c $TYPE-config.xml -m 1 -q cystic-fibrosis.queries \
-    -o results-$TYPE.txt
-\end{lstlisting}
-
-\begin{lstlisting}
-$ trec_eval -m ndcg cystic-fibrosis.qrel results-$TYPE.txt
-\end{lstlisting}
+It seems unreliable to choose a ranking model based on one choice of field
+only. The dataset is sufficiently small, for us to consider many possible
+permuations. The results varying the choice of field and ranking model are
+shown in \referToTable{ranking-model-vs-fields}.
 
 \begin{table}[h!]
 \centering
@@ -124,10 +113,14 @@ Jelinek-Mercer smoothing.}
 \label{table:ranking-model-vs-fields}
 \end{table}
 
+The results indicate that the Vector Space model with TFIDF weighting (and
+default Lemur 4.12 parameters) slightly outperforms all other methods (with
+varying parameters). Also, choosing to index using all the fields seems to
+yield the best results.
 
-We can compare nDCG, MAP, and MRR using
-\referToTable{evaluation-measure-vs-fields}).  The table also includes
-precision and recall measures for the purposes of discussion.
+\referToTable{evaluation-measure-vs-fields} compares the nDCG, MAP and MRR
+evaluation measures.  The table also includes precision and recall measures for
+the purposes of discussion.
 
 Mean Reciprocal Rank (MRR) considers only how many results the user has to skip
 from the top before reaching a relevant result. With the exception of using
