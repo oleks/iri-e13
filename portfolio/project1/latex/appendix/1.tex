@@ -5,13 +5,16 @@
 \label{appendix:1}
 
 The answer to this exercise is presented in such a manner that the reader can
-reproduce the results on a *nix system, e.g. an Ubuntu. Feel welcome to open a
-terminal and copy the below commands as you go along. It is assumed that the
-reader is familiar with Unix pipes and standard output redirection, i.e. the
-operators \texttt{|} and \texttt{>}.
+reproduce the results on a *nix system, e.g. Ubuntu or OS X. Feel welcome to
+open a terminal and copy the below commands as you go along. The PDF is
+generated such that you should in general be able to copy the commands directly
+into your terminal, although this is not always guaranteed to work. It is
+assumed that the reader is familiar with Unix pipes and standard output
+redirection, i.e. the operators \texttt{|} and \texttt{>}.
 
 We analyze the handed out query log. This is a file named
-\texttt{excite-999000.txt} obtained from the course web site on November 18.
+\texttt{excite-999000.txt} obtained from the course web site on November 18,
+2013.
 
 To be more confident that we're working with the same file, we can compare our
 \texttt{md5sum}s:
@@ -22,35 +25,35 @@ $ md5sum excite-999000.txt
 \end{lstlisting}
 
 Since the 3rd column is to be ignored, we start by placing all but the 3rd
-column (separated by tabs) into a new file, \texttt{excite-999000.txt.no3}:
+column (separated by tabs) into a new file, \texttt{excite-999000.no3.txt}:
 
 \begin{lstlisting}
-$ cat excite-999000.txt | cut -f1,2,4- - > excite-999000.no3.txt
+$ cat excite-999000.txt | cut -f1,2,4- - > no3.txt
 \end{lstlisting}
 
 If we look at the number of lines, it appears that we have a log of 999000
 queries:
 
 \begin{lstlisting}
-$ wc -l excite-999000.no3.txt
-999000 excite-999000.no3.txt
+$ wc -l no3.txt | cut -f1 -d' '
+999000
 \end{lstlisting}
 
 Before further processing, we'll sort the queries by hashed user id and then
 timestamp, i.e. first by column 2, then column 1.
 
 \begin{lstlisting}
-$ sort -k2,2 -k1,1 excite-999000.no3.txt > excite-999000.no3.by.2-1.txt
+$ sort -k2,2 -k1,1 no3.txt > no3.by.2-1.txt
 \end{lstlisting}
 
-Eliminating duplicates, we see that we really 996299 queries. This
+Eliminating duplicates, we see that there are only 996299 unique queries. This
 normalization is justifiable as the same user sending the same query within the
 time frame of one second is most probably due to a technical glitch.
 
 \begin{lstlisting}
-$ uniq excite-999000.no3.by.2-1.txt > excite-999000.no3.by.2-1.uniq.txt
-$ wc -l excite-999000.no3.by.2-1.uniq.txt 
-996299 excite-999000.no3.by.2-1.uniq.txt
+$ uniq no3.by.2-1.txt > no3.by.2-1.uniq.txt
+$ wc -l no3.by.2-1.uniq.txt | cut -f1 -d' '
+996299
 \end{lstlisting}
 
 \begin{itemize}
@@ -61,13 +64,13 @@ We assume that no pair of user ids hash to the same ``hashed user id'',
 so a unique hash designates a unique user id.
 
 To compute the mean number of queries per user id, we pick out the user id
-column, and count how many times a user id appears in consecutive order. This
-gives a count the number of queries issued by each user id.
+column from the query, and count how many times a user id appears in
+consecutive order. Recall that the query log is sorted by hashed user id first,
+so this gives a count the number of queries issued by each user id.
 
 \begin{lstlisting}
-$ cut -f2 excite-999000.no3.by.2-1.uniq.txt | uniq -c | \
-  sort -nr > excite-999000.no3.query.counts.txt
-$ head -5 excite-999000.no3.query.counts.txt 
+$ cut -f2 no3.by.2-1.uniq.txt | uniq -c | sort -nr > no3.query.counts.txt
+$ head -5 no3.query.counts.txt 
   52883 F54BC573FF3C94B1
   11999 02F1CA1699E5D828
    6880 245832BC3425778D
@@ -75,20 +78,48 @@ $ head -5 excite-999000.no3.query.counts.txt
    6404 E43DD6D82BFBD0B8
 \end{lstlisting}
 
+For the purposes of computing the mean and standard deviation, we set up an
+\texttt{awk} script named \texttt{mean\_std.awk} with the following contents:
+
+\begin{lstlisting}
+{ values[NR] = \$0; total += \$0 }
+
+END{
+  mean = total/NR;
+  for (i in values) {
+    std += (values[i] - mean) ^ 2
+  }
+  std = sqrt(std/NR);
+  print mean" +/- "std
+}
+\end{lstlisting}
+
 We now extract the first column (the counts), and use \texttt{awk} utility to
 compute the median and standard deviation.
 
 \begin{lstlisting}
-$ sed "s/ *\([0-9]\+\) .*/\1/" excite-999000.no3.query.counts.txt | awk \
-  "{x[NR]=$0; s+=$0} END{md=s/NR; \
-   for (i in x){ss += (x[i]-md)^2} sd = sqrt(ss/NR); \
-   print "MD = "md; print "SD = "sd}"
-MD = 4.297
-SD = 135.462
+$ sed "s/ *\([0-9]\+\) .*/\1/" no3.query.counts.txt | awk -f mean_std.awk
+4.297 +/- 135.462
 \end{lstlisting}
 
-So the number of queries per user is roughly $4.3\pm135.5$, meaning that
-roughly 68\% of the users perform between $1$ and $140$ queries.
+This standard deviation is somewhat extreme. We now take a look at how many
+users are performing just a few queries, and so look less like bots:
+
+\begin{lstlisting}
+$ wc -l no3.query.counts.txt | cut -f1 -d' '
+231859
+$ grep " \+[1-9] " no3.query.counts.txt | wc -l
+220225
+\end{lstlisting}
+
+So roughly 95\% of users perform between 1 and 9 queries. We now consider
+the mean and standard deviation of the number of queries for just those users:
+
+\begin{lstlisting}
+$ grep " \+[1-9] " no3.query.counts.txt | \
+  sed "s/ *\([0-9]\+\) .*/\1/" | awk -f mean_std.awk
+2.36756 +/- 1.844
+\end{lstlisting}
 
 \item \emph{Analyse the variability of query length (i.e., in words or in
 characters).}
