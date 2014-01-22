@@ -35,7 +35,7 @@ If we look at the number of lines, it appears that we have a log of 999000
 queries:
 
 \begin{lstlisting}
-$ wc -l no3.txt | cut -f1 -d' '
+$ cat no3.txt | wc -l
 999000
 \end{lstlisting}
 
@@ -49,12 +49,12 @@ $ sort -k2,2 -k1,1 no3.txt > no3.by.2-1.txt
 \end{lstlisting}
 
 Eliminating duplicates, we see that there are only 996299 unique queries. This
-normalization is justifiable as the same user sending the same query within the
+normalisation is justifiable as the same user sending the same query within the
 time frame of one second is most probably due to a technical glitch.
 
 \begin{lstlisting}
 $ uniq no3.by.2-1.txt > no3.by.2-1.uniq.txt
-$ wc -l no3.by.2-1.uniq.txt | cut -f1 -d' '
+$ cat no3.by.2-1.uniq.txt | wc -l
 996299
 \end{lstlisting}
 
@@ -108,7 +108,7 @@ This standard deviation is somewhat extreme. We now take a look at how many
 users are performing just a few queries, and so look less like bots:
 
 \begin{lstlisting}
-$ wc -l no3.query.counts.txt | cut -f1 -d' '
+$ cat no3.query.counts.txt | wc -l
 231859
 $ grep " \+[1-9] " no3.query.counts.txt | wc -l
 220225
@@ -122,6 +122,29 @@ $ grep " \+[1-9] " no3.query.counts.txt | \
   sed "s/ *\([0-9]\+\) .*/\1/" | awk -f mean_std.awk
 2.36756 +/- 1.844
 \end{lstlisting}
+
+Observing the head of \texttt{no3.query.counts.txt} reveals a couple users that
+look like bots:
+
+\begin{lstlisting}
+$ head no3.query.counts.txt 
+  52883 F54BC573FF3C94B1
+  11999 02F1CA1699E5D828
+   6880 245832BC3425778D
+   6483 18E21BC7D100C75A
+   6404 E43DD6D82BFBD0B8
+   6391 E964D6A0DE533C46
+   6368 FEF3B8BE27B32551
+   6357 9D9541F7837C5B13
+   6353 CA52ECD1524E737D
+   6326 F05EA1123DD9A4DD
+\end{lstlisting}
+
+Looking at their issued queries however, we find that it looks more like it is
+another search engine that is redirecting their queries to ours. Because of
+this observation we choose not to ignore queries from these frequent users. In
+a real setting however, we analyse all of these potential bots to see if any of
+them indeed are bots.
 
 \item \emph{Analyse the variability of query length (i.e., in words or in
 characters).}
@@ -144,7 +167,7 @@ $ head -n -11 queries.txt | awk '{print NF}' | awk -f mean_std.awk
 
 We ignore the trailing 11 queries and compute the average number of words
 (rather than characters) because all except the last 11 queries in (the sorted)
-\texttt{queries.txt} start with US-ASCII characters.
+\texttt{queries.txt} start with ASCII characters.
 
 To convince ourselves that the queries indeed (mostly) seem to be phrased in an
 alphabet-based language, we might look at the average number of characters as
@@ -178,8 +201,8 @@ casing of e.g. numeric queries.
 First, we'll count the number of queries we're now dealing with:
 
 \begin{lstlisting}
-$ wc -l queries.alpha.txt 
-995241 queries.alpha.txt
+$ cat queries.alpha.txt | wc -l
+995241
 \end{lstlisting}
 
 So 1058 queries cannot be categorized as either, upper, lower, or mixed case.
@@ -225,8 +248,8 @@ above.
 $ grep -iE "^((which|what|whose|who|whom|what|which|where|whence|
 whither|when|how|why|wherefore|whether|whoever|howto|whois)[^ ',s\?:+]|.*\?)$" \
 queries.txt > questions.txt
-$ wc -l questions.txt 
-82045 questions.txt
+$ cat questions.txt | wc -l
+82045
 \end{lstlisting}
 
 To see what we miss by using this strategy, we can first generate a file
@@ -237,14 +260,14 @@ followed by one of the above symbols:
 $ grep -iE "^(which|what|whose|who|whom|what|which|where|whence|
 whither|when|how|why|wherefore|whether|whoever)[^ ',s\?:+][^\?]*$" \
 queries.txt > badquestions.txt
-$ wc -l badquestions.txt 
-740 badquestions.txt
+$ cat badquestions.txt | wc -l
+740
 \end{lstlisting}
 
 Observing the file, we see that we miss only a few special forms. We can refine
 the method further, but this may be missing the point of this exercise.
 
-There are 82045 queries that we've identified as queries, or 8.235\% of the
+There are 82045 queries that we've identified as questions, or 8.235\% of the
 queries. We can find the most frequently asked question by sorting the
 questions, counting how many times each question appears in sequence, sorting
 by this count, and taking the top element.
@@ -254,19 +277,19 @@ to spacing and other non-alphanumeric characters:
 
 \begin{lstlisting}
 $ sed "s/[^a-zA-Z0-9]//g" questions.txt | sed "/^$/d" | \
-  tr "[:upper:]" "[:lower:]" > questions.normalized.txt
-$ sort questions.normalized.txt | uniq -c | sort -nr | head -1
+  tr "[:upper:]" "[:lower:]" > questions.norm.txt
+$ sort questions.norm.txt | uniq -c | sort -nr | head -1
     114 wherecanifindmathjokes
 \end{lstlisting}
 
 This does seem a little implausible. We hypothesise that if anything, this has
-to do with minor spelling variations in the questions. Indeed, simply stripping
-non-alphabetic characters first yields the same result.
+to do with minor spelling and formulation variations in the questions. Indeed,
+simply stripping non-alphabetic characters first yields the same result.
 
 \item \emph{What are the $k$ most common queries issued?}
 
 \begin{lstlisting}
-$ sort questions.normalized.txt | uniq -c | sort -nr | head -20
+$ sort questions.norm.txt | uniq -c | sort -nr | head -20
     114 wherecanifindmathjokes
      64 wherecanifindinformationoncaptech
      60 howdoesdryicework
@@ -299,7 +322,7 @@ collection frequency.
 
 The list of stop words was retrieved from
 \url{http://ir.dcs.gla.ac.uk/resources/linguistic_utils/stop_words} on November
-27:
+27, 2013.
 
 \begin{lstlisting}
 $ md5sum stop_words.txt
@@ -312,23 +335,24 @@ exactly one space, and lower case all the queries:
 
 \begin{lstlisting}
 $ sed "s/[^a-zA-Z0-9 ]//g" queries.txt | sed "s/  +/ /" | \
-  tr "[:upper:]" "[:lower:]" > queries.normalized.txt
+  tr "[:upper:]" "[:lower:]" > queries.norm.txt
 \end{lstlisting}
 
-In order to use \texttt{grep} to find queries containing words in the word
-list, we also need to preprocess the word list. We need to remove carriage
-returns, as well as prefix and postfix every line with \texttt{\textbackslash}
-indicating a word boundary. Indeed, every line should be a well-formed regular
-expression.
+In order to use \texttt{grep} to find queries containing words in the stop word
+list, we also need to preprocess the stop word list. We need to remove carriage
+returns, as well as prefix and postfix every line with \texttt{\textbackslash
+b} indicating a word boundary. Indeed, every line should be a well-formed
+regular expression.
 
 \begin{lstlisting}
-$ cat stop_words.txt | tr -d '\r' | sed 's/^\(.*\)$/\\b\1\\b/g' > stop_words.txt.ready
+$ cat stop_words.txt | tr -d '\r' | sed 's/^\(.*\)$/\\b\1\\b/g' \
+  > stop_words.ready.txt
 \end{lstlisting}
 
 We can now proceed to use grep to count queries containing stop words:
 
 \begin{lstlisting}
-$ grep -f stop_words.txt.ready queries.normalized.txt | wc -l
+$ grep -f stop_words.ready.txt queries.norm.txt | wc -l
 274864
 \end{lstlisting}
 
@@ -338,12 +362,12 @@ So $23.574\%$ of the queries contain stop words.
 that contain the word download?}
 
 We pick out those queries from our normalized list of queries that contain the
-word download, and split those queries into words. We proceed by turning every
-punctuation symbol or space into a line break, and removing those lines which
-now become empty:
+word ``download'', and split those queries into words. We proceed by turning
+every punctuation symbol or space into a line break, and removing those lines
+which now become empty:
 
 \begin{lstlisting}
-$ grep "download" queries.normalized.txt | tr "[[:punct:][:space:]]" "\n" | \
+$ grep "download" queries.norm.txt | tr "[[:punct:][:space:]]" "\n" | \
   sed "/^$/d" > words.txt
 \end{lstlisting}
 
@@ -352,7 +376,7 @@ preprocessed stopwords file. We then sort those words, pick count their unique
 occurrences, sort by the counts, and take the top 20:
 
 \begin{lstlisting}
-$ grep -vf stop_words.txt.ready words.txt | sort | uniq -c | sort -nr | head -20
+$ grep -vf stop_words.ready.txt words.txt | sort | uniq -c | sort -nr | head -20
    3441 download
    1110 downloads
     837 free
@@ -385,9 +409,10 @@ where the word ``download'' appears, we'll simply \texttt{cat} the normalized
 queries.
 
 \begin{lstlisting}
-$ cat queries.normalized.txt | tr "[[:punct:][:space:]]" "\n" | sed "/^$/d" \
+$ cat queries.norm.txt | tr "[[:punct:][:space:]]" "\n" | sed "/^$/d" \
   > words.txt
-$ grep -vf stop_words.txt.ready words.txt | sort | uniq -c | sort -nr | head -20
+$ grep -vf stop_words.ready.txt words.txt | sort | uniq -c | sort -nr > top.txt
+$ head -20 top
   20934 free
   13306 pictures
   13117 information
@@ -413,11 +438,11 @@ $ grep -vf stop_words.txt.ready words.txt | sort | uniq -c | sort -nr | head -20
 \item \emph{What percentage of queries were asked by only one user?}
 
 We can compute the number of queries executed by a single user by extracting
-column 2 from our \texttt{excite-999000.no3.by.2-1.uniq.txt} constructed
+column 2 from our \texttt{no3.by.2-1.uniq.txt} constructed
 earlier:
 
 \begin{lstlisting}
-$ cut -f2 excite-999000.no3.by.2-1.uniq.txt | uniq -u | wc -l
+$ cut -f2 no3.by.2-1.uniq.txt | sort | uniq -u | wc -l
 100439
 \end{lstlisting}
 
@@ -501,7 +526,7 @@ We extract the leading 3 characters of every line, sort the numbers, and count
 unique consecutive lines:
 
 \begin{lstlisting}
-$ cut -c-3 excite-999000.no3.by.2-1.uniq.txt | sort -n | uniq -c
+$ cut -c-3 no3.by.2-1.uniq.txt | sort -n | uniq -c
   60784 090
   61473 091
   58620 092
@@ -527,11 +552,34 @@ extract the 6 leading characters, and use \texttt{head} and \texttt{tail} to
 find the earliest and latest query time, respectively:
 
 \begin{lstlisting}
-$ cut -c-6 excite-999000.no3.by.2-1.uniq.txt | sort -n | uniq | head -1
+$ cut -c-6 no3.by.2-1.uniq.txt | sort -n | uniq | head -1
 090000
-$ cut -c-6 excite-999000.no3.by.2-1.uniq.txt | sort -n | uniq | tail -1
+$ cut -c-6 no3.by.2-1.uniq.txt | sort -n | uniq | tail -1
 115618
 \end{lstlisting}
+
+\item \emph{Build a world cloud (e.g. using Wordle) from the top 200 most
+common non-stopwords}
+
+In order to use \url{http://www.wordle.net/}, we seem to need a file composed
+of exactly the words we would like a tag cloud over. 
+
+For this, we need to pick the top 200 lines of \texttt{top.txt} and rework them
+to form regular expressions, and otherwise proceed and then extract all the
+words in \texttt{words.txt} which match these regular expressions.
+
+in a way similar
+to when we had to find the queries that contained a stop words.
+
+\begin{lstlisting}
+$ head -200 top.txt | sed 's/ \+[0-9]\+ \(.*\)/\\b\1\\b/' > top200.txt
+$ grep -f top200.txt words.txt > wordle.txt
+\end{lstlisting}
+
+Unfortunately, due to technical difficulties we were not capable of using
+\url{http://www.wordle.net/}. A better tool would be one that allowed to upload
+words and their frequencies instead. Due to time constraints, a word cloud was
+not generated manually either.
 
 \end{itemize}
 

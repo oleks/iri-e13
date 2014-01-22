@@ -24,14 +24,19 @@ deviation is somewhat extreme: roughly 95\% of the users perform less than 10
 queries. Among those, the number of queries on is average $2.38 \pm 1.84$. This
 means that roughly 64\% of the users perform between $1$ and $4$ queries.
 
+While answering this question, we also identified several users that issued a
+lot more queries than the rest (52.8 and 11.9 thousand queries, respectively).
+However, these looked more like redirects from other search engines to ours.
+For this reason, their queries were not ignored in the questions below.
+
 \item \emph{Analyse the variability of query length (i.e., in words or in
 characters).}
 
 We extract only the queries from the data file and sort them in lexicographic
 order. We find that the queries seem to be mostly in an alphabet-based
 language. There are $3.23 \pm 2.61$ words per query and $20.49 \pm 14.37$
-characters per query. Meaning that there are roughly 6 words per word, which is
-not unreasonable for an alphabet-based language.
+characters per query. Meaning that there are roughly 6 characters per word,
+which is not unreasonable for an alphabet-based language.
 
 \item \emph{What percentage of queries are mixed case? Upper case? Lower case?}
 
@@ -62,7 +67,7 @@ are those queries that contain no alphabetic characters.}
 with Wh-words, or ending with a '?'    symbol). What percentage of queries do
 questions make up? What is the most common type of question?}
 
-We've compiled a set of interrogative pronouns, and allowed for some variation
+We have compiled a set of interrogative pronouns, and allowed for some variation
 in them due to e.g. genitive casing. Looking for these or queries ending in
 question mark, we've found that 82045 queries look like questions, or 8.235\%
 of the queries.
@@ -144,8 +149,8 @@ word:
 
 \item \emph{What are the $k$ most common non-stopwords appearing in queries?}
 
-We'll proceed as above, except that instead of picking out those queries where
-the word ``download'' appears, we'll simply split all the normalized
+We will proceed as above, except that instead of picking out those queries
+where the word ``download'' appears, we'll simply split all the normalized
 queries into words. The results are as follows:
 
 \begin{lstlisting}
@@ -273,6 +278,14 @@ may be an outlier.
 \includeFigure[0.6]{times}{Distribution of the query volume over time. The
 labels indicate a starting point, with each bar representing a 10 minute time
 frame.}
+
+\item \emph{Build a world cloud (e.g. using Wordle) from the top 200 most
+common non-stopwords}
+
+Unfortunately, due to technical difficulties we were not capable of using
+\url{http://www.wordle.net/}. The tool requires us to upload a text. A better
+tool would be one that allowed to upload words and their frequencies instead.
+Due to time constraints, a word cloud was not generated manually either.
 
 \end{itemize}
 
