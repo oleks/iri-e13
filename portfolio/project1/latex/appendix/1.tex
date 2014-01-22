@@ -40,7 +40,9 @@ $ wc -l no3.txt | cut -f1 -d' '
 \end{lstlisting}
 
 Before further processing, we'll sort the queries by hashed user id and then
-timestamp, i.e. first by column 2, then column 1.
+timestamp, i.e. first by column 2, then column 1. Both sorts are done using a
+lexicographic order since all values in each respective field have the same
+length.
 
 \begin{lstlisting}
 $ sort -k2,2 -k1,1 no3.txt > no3.by.2-1.txt
@@ -124,29 +126,37 @@ $ grep " \+[1-9] " no3.query.counts.txt | \
 \item \emph{Analyse the variability of query length (i.e., in words or in
 characters).}
 
-We extract the third column (queries), and sort them in lexicographic order:
+We extract the third column (queries), and sort them in lexicographical order:
 
 \begin{lstlisting}
-$ cut -f3- excite-999000.no3.by.2-1.uniq.txt | sort > queries.txt
+$ cut -f3- no3.by.2-1.uniq.txt | sort > queries.txt
 \end{lstlisting}
 
-We'll use an approach similar to the above to find the median and standard
-deviation of the query length (in characters).
+We will use an approach similar to the above to find the median and standard
+deviation of the query length. To obtain a query length per line we use
+\texttt{awk} to count the number of fields separators, which is one or more
+whitespace (space, tab, or line break) character per line.
 
 \begin{lstlisting}
-$ cat queries.txt | awk "{x[NR]=length($0); s+=length($0)} \
-  END{md=s/NR; for (i in x){ss += (x[i]-md)^2} sd = sqrt(ss/NR); \
-  print "MD = "md; print "SD = "sd}"
-MD = 20.4887
-SD = 14.365
+$ head -n -11 queries.txt | awk '{print NF}' | awk -f mean_std.awk 
+3.23573 +/- 2.62894
 \end{lstlisting}
 
-So a query is roughly $20.5\pm 14.4$ characters long, meaning that roguhly 68\%
-of the queries have a character length between $6.1$ and $34.9$.
+We ignore the trailing 11 queries and compute the average number of words
+(rather than characters) because all except the last 11 queries in (the sorted)
+\texttt{queries.txt} start with US-ASCII characters.
 
-The reason that we choose to do this based on characters is because by looking
-at the tail of the \texttt{queries.txt} file, we find that a few queries are
-written in character-based languages. 
+To convince ourselves that the queries indeed (mostly) seem to be phrased in an
+alphabet-based language, we might look at the average number of characters as
+well:
+
+\begin{lstlisting}
+$ cat queries.txt | awk '{print length()}' | awk -f mean_std.awk 
+20.4887 +/- 14.365
+\end{lstlisting}
+
+This gives roughly 6 characters per word, which is not unreasonable for an
+alphabet-based language.
 
 \item \emph{What percentage of queries are mixed case? Upper case? Lower case?}
 
@@ -197,7 +207,7 @@ We present the percentages relative to the total number of queries, i.e.
 with Wh-words, or ending with a ``?''    symbol). What percentage of queries do
 questions make up? What is the most common type of question?}
 
-We'll first extract those queries that look like questions. One easy way of
+We will first extract those queries that look like questions. One easy way of
 identifying these is to see whether they start with an interrogative pronoun,
 or end with a question mark.
 
@@ -206,7 +216,7 @@ queries. For example, there are queries that start with ``hows'' or ``how's'',
 while there are other non-interrogative words that start with ``how'', e.g.
 ``Howard''.
 
-We've tried to handle some of these problems by allowing a certain symbols to
+We have tried to handle some of these problems by allowing a certain symbols to
 follow the interrogative words, in particular (space), (comma), \texttt{s},
 \texttt{?}, \texttt{:}, \texttt{+}. Otherwise, the strategy is as outlined
 above.
@@ -370,8 +380,8 @@ As might be expected, people are looking for free downloads of games, music
 
 \item \emph{What are the $k$ most common non-stopwords appearing in queries?}
 
-We'll proceed as above, except that instead of picking out those queries where
-the word ``download'' appears, we'll simply \texttt{cat} the normalized
+We will proceed as above, except that instead of picking out those queries
+where the word ``download'' appears, we'll simply \texttt{cat} the normalized
 queries.
 
 \begin{lstlisting}
@@ -416,7 +426,7 @@ This is $10.081\%$ of all queries.
 \item \emph{How often do URLs appear in queries?}
 
 URLs can get fairly complex, especially when non-latin characters are allowed.
-We'll find a subset of queries that look like they contain URLs in a very
+We will find a subset of queries that look like they contain URLs in a very
 simple way: if they contain a sequence of characters followed by a dot,
 followed by a sequence of alphabetic characters (the top-level domain) of
 length at least two:
